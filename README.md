@@ -36,6 +36,11 @@ CUDA_VISIBLE_DEVICES=0 python none_KAN.py
 CUDA_VISIBLE_DEVICES=0 python main_KAN.py
 ```
 
+## Acknowledgments
 
+Our implementation has been inspired by and utilizes components from these excellent repositories:
+
+- **[MalCL](https://github.com/MalwareReplayGAN/MalCL/tree/master)** 
+- **[ConvKAN](https://github.com/StarostinV/convkan/tree/master)** 
 
 
