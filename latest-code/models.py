@@ -3,6 +3,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 import wandb
 from copy import deepcopy
+from convkan_layer import ConvKAN
+from kanlinear import KANLinear
+import numpy as np
+from scipy.interpolate import interp1d, CubicSpline
+
 
 class Classifier(nn.Module):
 
@@ -111,11 +116,6 @@ class Classifier(nn.Module):
         
         return logits.detach()
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from convkan_layer import ConvKAN
-from kanlinear import KANLinear
 
 
 class KANClassifier(nn.Module):
@@ -287,16 +287,9 @@ def interpolate_models(old_model, new_model, alpha=0.5, method='linear'):
     interpolated_model.load_state_dict(interpolated_state)
     return interpolated_model
 
-import numpy as np
-from scipy.interpolate import interp1d, CubicSpline
-import torch
-from copy import deepcopy
 
 def interpolate_models_KAN(old_model, new_model, alpha=0.5, method='linear'):
-    import numpy as np
-    from scipy.interpolate import interp1d, CubicSpline
-    from copy import deepcopy
-    import torch
+    
 
     def interpolate_tensor(old_tensor, new_tensor, method, alpha):
         old_np = old_tensor.detach().cpu().numpy()
