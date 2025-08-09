@@ -29,6 +29,7 @@ CUDA_VISIBLE_DEVICES=0 python none.py
 command lines are follows:
 
 ```bash
+CUDA_VISIBLE_DEVICES=0 python none.py
 CUDA_VISIBLE_DEVICES=0 python joint.py
 CUDA_VISIBLE_DEVICES=0 python main.py
 CUDA_VISIBLE_DEVICES=0 python none_KAN.py
