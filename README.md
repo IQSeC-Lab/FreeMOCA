@@ -2,10 +2,8 @@
 
 This repository contains code of the paper **FreeMOCA: Memory-Free Continual Learning for Malicious Code Analysis with Mode Connectivity and Interpolation**
 
-FreeMOCA is a buffer-free continual learning framework that leverages mode connectivity for malicious code classification. After each task, FreeMOCA
-computes a low-loss path that smoothly interpolates between the parameters of the current model and those of the previous task, preserving historical decision boundaries while adapting to new threats.
+FreeMOCA is a buffer-free continual learning framework where a classification problem is divided into several distinct, non-overlapping contexts (commonly referred to as tasks) that are learned sequentially.FreeMOCA leverages mode connectivity for malicious code classification and after each task, FreeMOCA computes a low-loss path that smoothly interpolates between the parameters of the current model and those of the previous task, preserving historical decision boundaries while adapting to new threats.
 
-This repository is primarily designed for experiments in academic continual learning, specifically applied to malware detection, where a classification problem is divided into several distinct, non-overlapping contexts (commonly referred to as tasks) that are learned sequentially.
 ## Datasets
 
 The dataset for the experiments can be downloaded from [here](https://drive.google.com/drive/folders/1YGmxcQGqu22ZQuZccpD81WUBKHh7c3Jq) and the [Zenodo Repository](https://zenodo.org/records/14537891).
