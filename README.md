@@ -39,6 +39,10 @@ CUDA_VISIBLE_DEVICES=0 python joint_KAN.py
 CUDA_VISIBLE_DEVICES=0 python main_KAN.py
 ```
 
+## FreeMOCA Overview
+
+[FreeMOCA](https://github.com/IQSeC-Lab/FreeMOCA/raw/master/Final_figure.pdf)
+
 ## Acknowledgments
 
 Our implementation has been inspired by and utilizes components from these excellent repositories:
