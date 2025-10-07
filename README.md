@@ -13,7 +13,7 @@ We utilize the 2018 EMBER dataset, a benchmark known for its challenging malware
 
 ### AZ-Class Dataset
 The AZ-Class dataset contains 285,582 samples from 100 Android malware families, with each family having at least 200 samples. We extract Drebin features (Arp et al., 2014) from the Android applications, covering eight categories including hardware access, permissions, API calls, and network addresses.
-CUDA_VISIBLE_DEVICES=0 python none.py
+
 
 ## Installation & requirements
 
