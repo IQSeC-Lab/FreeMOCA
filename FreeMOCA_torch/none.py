@@ -86,7 +86,7 @@ for task in range(config.nb_task):
             labels = labels.float()
             inputs = inputs.to(config.device)
             labels = labels.to(config.device)
-            C.train()
+            
             run_batch(config, C_optimizer, C, criterion, inputs, labels)
     
     with torch.no_grad():
