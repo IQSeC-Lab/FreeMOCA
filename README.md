@@ -41,7 +41,7 @@ CUDA_VISIBLE_DEVICES=0 python main_KAN.py
 
 ## FreeMOCA Overview
 
-[FreeMOCA](https://github.com/IQSeC-Lab/FreeMOCA/raw/master/Final_figure.pdf)
+[FreeMOCA](https://github.com/IQSeC-Lab/FreeMOCA/blob/master/Final_figure.pdf)
 
 ## Acknowledgments
 
