@@ -1,53 +1,154 @@
-# FreeMOCA: Memory-Free Continual Learning for Malicious Code Analysis with Mode Connectivity and Interpolation
+# FreeMOCA
+## Memory-Free Continual Learning for Malicious Code Analysis with Mode Connectivity and Interpolation
 
-This repository contains code of the paper **FreeMOCA: Memory-Free Continual Learning for Malicious Code Analysis with Mode Connectivity and Interpolation**
+Official implementation of the paper  
+**FreeMOCA: Memory-Free Continual Learning for Malicious Code Analysis with Mode Connectivity and Interpolation**
 
-FreeMOCA is a buffer-free continual learning framework where a classification problem is divided into several distinct, non-overlapping contexts (commonly referred to as tasks) that are learned sequentially.FreeMOCA leverages mode connectivity for malicious code classification and after each task, FreeMOCA computes a low-loss path that smoothly interpolates between the parameters of the current model and those of the previous task, preserving historical decision boundaries while adapting to new threats.
+---
+
+## Overview
+
+FreeMOCA is a **buffer-free continual learning framework** for malware classification that mitigates **catastrophic forgetting** without storing or replaying past data. Instead of using memory buffers or generative replay, FreeMOCA exploits **mode connectivity** in parameter space to preserve previously learned knowledge while adapting to new malware families.
+
+After each task, FreeMOCA computes a **low-loss interpolation path** between the parameters of the current task model and the previous task model. This interpolation preserves historical decision boundaries while enabling efficient adaptation to evolving malware distributions.
+
+FreeMOCA is designed for **real-world malware detection systems**, where memory, privacy, and computational constraints make replay-based continual learning impractical.
+
+---
+
+## Key Features
+
+- **Memory-free continual learning** (no replay buffers or synthetic data)
+- **Mode connectivity–based interpolation** between task-specific optima
+- **Warm-start training** to align task minima in parameter space
+- **Adaptive layer-wise interpolation** based on parameter update magnitude
+- Supports **CNN** and **Convolutional Kolmogorov–Arnold Networks (C-KAN)**
+- Evaluated on **large-scale Windows and Android malware datasets**
+
+---
+
+## Method Summary
+
+FreeMOCA operates in a **class-incremental learning (Class-IL)** setting:
+
+1. Tasks arrive sequentially, each introducing new malware families.
+2. The model for each task is initialized from the previous task (warm start).
+3. After training, a **low-loss interpolation** is computed between the current and previous task parameters.
+4. The interpolated model replaces the current model and is used for the next task.
+5. No past data, features, or generated samples are stored.
+
+This process constructs a chain of connected solutions that lie on a low-loss manifold, significantly reducing catastrophic forgetting.
+
+---
 
 ## Datasets
 
-The dataset for the experiments can be downloaded from [here](https://drive.google.com/drive/folders/1YGmxcQGqu22ZQuZccpD81WUBKHh7c3Jq) and the [Zenodo Repository](https://zenodo.org/records/14537891).
+### EMBER-Class (Windows Malware)
 
-### EMBER 2018 Dataset
-We utilize the 2018 EMBER dataset, a benchmark known for its challenging malware classification tasks. Our study focuses on a subset of 337,035 malicious Windows PE files belonging to the top 100 malware families, each represented by more than 400 samples. The dataset includes features such as file size, PE and COFF header metadata, DLL characteristics, imported and exported functions, and various file properties (e.g., size and entropy). All features are processed using the feature hashing technique.
+- Derived from the **EMBER 2018** dataset
+- **337,035** malicious PE files
+- **100 malware families**, each with more than 400 samples
+- Feature categories:
+  - PE and COFF headers
+  - Imported and exported functions
+  - DLL characteristics
+  - File properties (size, entropy, metadata)
+- Features are encoded using **feature hashing**
 
-### AZ-Class Dataset
-The AZ-Class dataset contains 285,582 samples from 100 Android malware families, with each family having at least 200 samples. We extract Drebin features (Arp et al., 2014) from the Android applications, covering eight categories including hardware access, permissions, API calls, and network addresses.
+Dataset sources:
+- EMBER: https://github.com/elastic/ember  
+- Zenodo repository (as referenced in the paper)
 
+---
 
-## Installation & requirements
+### AZ-Class (Android Malware)
+
+- Collected from the **AndroZoo** repository
+- **285,582** Android malware samples
+- **100 malware families**, each with at least 200 samples
+- Features extracted using **DREBIN**, including:
+  - Permissions
+  - API calls
+  - Hardware components
+  - Network addresses
+
+---
+
+## Models
+
+We evaluate FreeMOCA using two classifiers.
+
+### Convolutional Neural Network (CNN)
+
+- Two convolutional blocks:
+  - **Block 1**:
+    - Two Conv1D layers (kernel size = 3, stride = 3)
+    - Batch normalization, ReLU, dropout (0.5), max pooling
+  - **Block 2**:
+    - One Conv1D layer (kernel size = 3, stride = 2)
+    - Batch normalization, ReLU, dropout
+- Fully connected classification head with softmax output
+
+---
+
+### Convolutional Kolmogorov–Arnold Network (C-KAN)
+
+- Uses KAN-based convolutions for enhanced representational power
+- More sensitive to catastrophic forgetting than CNN
+- FreeMOCA substantially mitigates forgetting in C-KAN models
+
+---
+
+## Experimental Setup
+
+- **Learning scenario**: Class-Incremental Learning
+- **Task sequence**:
+  - Task 1: 50 classes
+  - Tasks 2–11: +5 new classes per task
+- **Optimizer**: SGD  
+  - Learning rate: 1e-3  
+  - Momentum: 0.9  
+  - Weight decay: 1e-7
+- **Batch size**: 256
+- No replay, data augmentation, or rehearsal is used
+
+---
 
 ## Baselines
 
-None baseline involves retraining the model with only new data serves as the informal lower bound.
-Joint baseline combines data from all previous tasks into a single dataset for training, representing an ideal scenario that preserves all prior information but is impractical for large-scale malware datasets, serving as the informal upper bound.
+- **None**: Train only on the current task (lower bound)
+- **Joint**: Train on all data seen so far (upper bound, impractical)
 
-## Models
-we train and test our class incremental scenario with two classifiers, a standard CNN and a convolutional Kolmogorov–Arnold Network (C-
-KAN). The backbone consists of two convolutional blocks. The first includes two Conv1D layers (kernel size 3, stride 3), each followed by batch normalization, ReLU, dropout (0.5), and max pooling. The second block uses a single Conv1D layer (kernel size 3, stride 2) with batch normal-
-ization, dropout, and ReLU.
+### Compared Continual Learning Methods
 
-## Experiments:
-command lines are follows:
+- iCaRL
+- Experience Replay (ER)
+- Generative Replay (GR)
+- BI-R
+- TAMiL
+- MaLCL
+- CLEWI
+- PEARL
+
+FreeMOCA outperforms these methods **without storing any past data**.
+
+---
+
+## Results Highlights
+
+- **EMBER-Class**:
+  - ~10% absolute improvement over strongest baselines
+  - Up to **46% reduction in catastrophic forgetting**
+- **AZ-Class**:
+  - ~5% improvement over state-of-the-art methods
+- **C-KAN**:
+  - Accuracy improves from ~13–18% to over **55–64%**
+
+---
+
+## Installation
 
 ```bash
-CUDA_VISIBLE_DEVICES=0 python none.py
-CUDA_VISIBLE_DEVICES=0 python joint.py
-CUDA_VISIBLE_DEVICES=0 python main.py
-CUDA_VISIBLE_DEVICES=0 python none_KAN.py
-CUDA_VISIBLE_DEVICES=0 python joint_KAN.py
-CUDA_VISIBLE_DEVICES=0 python main_KAN.py
-```
-
-## FreeMOCA Overview
-
-[FreeMOCA](https://github.com/IQSeC-Lab/FreeMOCA/blob/master/Final_figure.pdf)
-
-## Acknowledgments
-
-Our implementation has been inspired by and utilizes components from these excellent repositories:
-
-- **[MalCL](https://github.com/MalwareReplayGAN/MalCL/tree/master)** 
-- **[ConvKAN](https://github.com/StarostinV/convkan/tree/master)** 
-
-
+conda create -n freemoca python=3.9
+conda activate freemoca
+pip install -r requirements.txt
