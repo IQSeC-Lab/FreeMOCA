@@ -89,6 +89,8 @@ We evaluate FreeMOCA using two classifiers.
     - Batch normalization, ReLU, dropout
 - Fully connected classification head with softmax output
 
+![Classifier Architecture](figures/classifier_architecture.png)
+
 ---
 
 ### Convolutional Kolmogorov–Arnold Network (C-KAN)
