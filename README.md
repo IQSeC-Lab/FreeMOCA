@@ -89,7 +89,7 @@ We evaluate FreeMOCA using two classifiers.
     - Batch normalization, ReLU, dropout
 - Fully connected classification head with softmax output
 
-![Classifier Architecture](classifier_architecture.png)
+![Classifier Architecture](FreeMOCA-Overview.png)
 
 ---
 
