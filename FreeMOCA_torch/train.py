@@ -2,13 +2,20 @@ import torch
 from function import get_iter_train_dataset, get_iter_train_dataset_joint, get_iter_test_dataset, get_dataloader
 from torch.autograd import Variable
 import torch.nn.functional as F
-
-
+from data_ import get_domain_data
 
 
 ################################################################################################
 # This function sets up the essential variables used in either adversarial training (e.g., GANs) or general batch training scenarios, ensuring compatibility with both CPU and GPU environments.
 def vars_batch_train(config, x_, y_):
+
+      if config.dataset == "EMBER":
+          feats_length = 2381
+      elif config.dataset == "AZ":
+            # AZ Class-IL vs Domain-IL differ in preprocessing
+          feats_length = 2439 if config.scenario == "class" else 1789
+      else:
+            raise ValueError(f"Unknown dataset {config.dataset}")
       x_ = x_.view([-1, config.feats_length])
       #me added
       x_ = Variable(x_)
@@ -28,34 +35,6 @@ def update_Classifier(config, C_optimizer, C, criterion, x_, y_):
       C_loss.backward()
       C_optimizer.step()
       
-
-# def compute_fisher(config, model, dataloader, criterion, device):
-#     """
-#     Compute diagonal Fisher Information Matrix (FIM) for model parameters.
-#     """
-#     model.eval()
-#     fisher = {name: torch.zeros_like(param) for name, param in model.named_parameters() if param.requires_grad}
-
-#     for n, (inputs, labels) in enumerate(dataloader):
-
-#         inputs = inputs.float().to(device)
-#         labels = labels.float().to(device)
-#         inputs, labels = vars_batch_train(config, inputs, labels)
-#         model.zero_grad()
-#         outputs = model(inputs)
-
-#         loss = criterion(outputs, labels)  # assuming classification task
-#         loss.backward()
-
-#         for name, param in model.named_parameters():
-#             if param.grad is not None and param.requires_grad:
-#                 fisher[name] += param.grad.data.pow(2)
-
-#     # Average over number of samples
-#     for name in fisher:
-#         fisher[name] /= len(dataloader)
-
-#     return fisher
 
 #####################################################################################################
 
@@ -79,6 +58,36 @@ def data_task(config, X_train, Y_train, X_test, Y_test, scaler):
     test_loader, _ = get_dataloader(X_test_t, Y_test_t, batchsize=config.batchsize, n_class=config.n_class, scaler = scaler, train=False)
     return X_train_t, Y_train_t, train_loader, X_test_t, Y_test_t, test_loader, scaler
 
+def data_task_domain(config, scaler, domain_name):
+    """
+    Loads Train/Test data for a specific Month (domain_name).
+    """
+    
+    # Load Train
+    X_train, Y_train = get_domain_data(config.data_root, domain_name, is_train=True)
+    
+    # Load Test (for immediate evaluation of this task)
+    X_test, Y_test = get_domain_data(config.data_root, domain_name, is_train=False)
+
+    # Create Loaders
+    # Note: n_class is fixed (config.init_classes)
+    train_loader, scaler = get_dataloader(
+        X_train, Y_train, 
+        batchsize=config.batchsize, 
+        n_class=config.init_classes, 
+        scaler=scaler, 
+        train=True
+    )
+    
+    test_loader, _ = get_dataloader(
+        X_test, Y_test, 
+        batchsize=config.batchsize, 
+        n_class=config.init_classes, 
+        scaler=scaler, 
+        train=False
+    )
+
+    return X_train, train_loader, X_test, test_loader, scaler
 
 
 def report_result(config, ls_a):

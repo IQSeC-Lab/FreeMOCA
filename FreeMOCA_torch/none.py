@@ -1,99 +1,135 @@
-
 import torch
 import torch.nn as nn
-from torch.autograd import Variable
-from copy import deepcopy
 import torch.optim as optim
 import numpy as np
-import pandas
+from copy import deepcopy
 from sklearn.preprocessing import StandardScaler
-import joblib
-from models import Classifier
-from function import test, class_pick_rand
-from torch.utils.data import TensorDataset
+
 from dynaconf import Dynaconf
 from arguments import _parse_args
 from setting import configurate, torch_setting
-from _data import dataset
-from train import data_task, report_result
-import subprocess
-import random
 
-# global variables and setting
+from data_ import dataset
+from function import (
+    test, get_dataloader, class_pick_rand,
+    get_iter_test_dataset_task
+)
+from train import (
+    data_task,
+    data_task_domain,
+    report_result,
+    run_batch_BCE as run_batch
+)
+from models import Classifier, interpolate_models
+from metrics_cl import compute_cl_metrics
+
+
+# ============================================================s
+# Setup
+# ============================================================
+
 config = Dynaconf()
 args = _parse_args()
 configurate(args, config)
 torch_setting(config)
 
-
-##############
-# EMBER DATA #
-##############
-
-X_train, Y_train, X_test, Y_test = dataset(config)
-
-# ############################################
-# # data random arange #
-# #############################################
-
-Y_train, Y_test = class_pick_rand(config, Y_train, Y_test)
-
-
-###############################
-# Models and Hyper Parameters #
-###############################
-C = Classifier()
-
-C.train()
-
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-C.to(device)
+assert config.scenario in ["class", "domain"], \
+    "config.scenario must be 'class' or 'domain'"
 
-C_optimizer = optim.SGD(C.parameters(), lr=config.lr, momentum=config.momentum, weight_decay=config.weight_decay)
+# ============================================================
+# Dataset
+# ============================================================
 
+X_train, Y_train, X_test, Y_test = dataset(config)
+Y_train, Y_test = class_pick_rand(config, Y_train, Y_test)
+
+# ============================================================
+# Model & optimizer
+# ============================================================
+
+C = Classifier().to(device)
+optimizer = optim.SGD(
+    C.parameters(),
+    lr=config.lr,
+    momentum=config.momentum,
+    weight_decay=config.weight_decay
+)
 criterion = nn.CrossEntropyLoss()
-
-################################################
-# sample selection and Batch training function # 
-################################################
-
-from train import run_batch_BCE as run_batch
-###############################
-# continual learning training #
-###############################
-ls_a = []
-
-
 scaler = StandardScaler()
 
+# ============================================================
+# Helpers
+# ============================================================
 
-print(f"before train")
+def n_class_for_task(task_id):
+    if config.scenario == "domain":
+        return config.init_classes
+    return config.init_classes + task_id * config.n_inc
+
+
+# ============================================================
+# CL metric storage (class-IL only)
+# ============================================================
+
+if config.scenario == "class":
+    T = config.nb_task
+    R = np.full((T, T), np.nan, dtype=float)
+
+ls_a = []
+past_Classifier = None
+
+# ============================================================
+# Training loop
+# ============================================================
+
 for task in range(config.nb_task):
-    config.n_class = config.init_classes + task * config.n_inc
     config.task = task
+    config.n_class = n_class_for_task(task)
 
-    X_train_t, Y_train_t, train_loader, X_test_t, Y_test_t, test_loader, scaler = data_task(config, X_train, Y_train, X_test, Y_test, scaler)
-    config.nb_batch = int(len(X_train_t)/config.batchsize)
+    # ----------------------------
+    # Data
+    # ----------------------------
+    if config.scenario == "class":
+        Xtr, Ytr, train_loader, Xte, Yte, test_loader, scaler = \
+            data_task(config, X_train, Y_train, X_test, Y_test, scaler)
+    else:
+        Xtr, Ytr, train_loader, Xte, Yte, test_loader, scaler = \
+            data_task_domain(config, X_train, Y_train, X_test, Y_test, scaler)
 
-    if task > 0:
-        C = C.expand_output_layer(config.init_classes, config.n_inc, task)
-        C.to(device)
+    config.nb_batch = len(Xtr) // config.batchsize
 
+    # ----------------------------
+    # Expand head (class-IL only)
+    # ----------------------------
+    if config.scenario == "class" and task > 0:
+        C = C.expand_output_layer(
+            config.init_classes,
+            config.n_inc,
+            task
+        ).to(device)
+
+    # ----------------------------
+    # Train
+    # ----------------------------
     for epoch in range(config.epochs):
-        for n, (inputs, labels) in enumerate(train_loader):
-            inputs = inputs.float()
-            labels = labels.float()
-            inputs = inputs.to(config.device)
-            labels = labels.to(config.device)
-            
-            run_batch(config, C_optimizer, C, criterion, inputs, labels)
-    
-    with torch.no_grad():
-        accuracy = test(config, C, test_loader)
-        ls_a.append(accuracy)
-    print("task", task, "done")
+        C.train()
+        for inputs, labels in train_loader:
+            inputs = inputs.float().to(device)
+            labels = labels.float().to(device)
+            run_batch(config, optimizer, C, criterion, inputs, labels)
 
-print("none", ", seed: ", config.seed_)
-print("The Accuracy for each task:", ls_a)
-print("The Global Average:", sum(ls_a)/len(ls_a))
+
+
+    # ----------------------------
+    # Evaluation (standard)
+    # ----------------------------
+    with torch.no_grad():
+        acc = test(config, C, test_loader)
+        ls_a.append(acc)
+    print(f"Task {task} done.\n")
+
+
+
+report_result(config, ls_a)
