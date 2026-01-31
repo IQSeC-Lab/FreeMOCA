@@ -132,6 +132,9 @@ def _parse_args():
     # =====================================================
     # 8. SAFETY CHECKS (FAIL FAST)
     # =====================================================
+    # =====================================================
+# 8. SAFETY CHECKS (FAIL FAST)
+# =====================================================
     if args.scenario == 'class':
         assert args.n_inc > 0, "Class-IL requires --n_inc > 0"
         assert args.final_classes is not None, "Class-IL requires --final_classes"
@@ -141,13 +144,6 @@ def _parse_args():
     if args.scenario == 'domain':
         assert args.data_root is not None, "Domain-IL requires --data_root"
         assert args.n_inc == 0, "Domain-IL must have n_inc = 0"
-
-        if args.dataset == 'AZ':
-            # AZ-Domain uses folders only (no explicit train/test paths)
-            pass
-        elif args.dataset == 'EMBER':
-            # EMBER-Domain still needs train/test inside each month
-            assert args.train_data is not None, "EMBER-Domain requires --train_data"
-            assert args.test_data is not None, "EMBER-Domain requires --test_data"
+    
 
     return args

@@ -2,7 +2,7 @@ import torch
 from function import get_iter_train_dataset, get_iter_train_dataset_joint, get_iter_test_dataset, get_dataloader
 from torch.autograd import Variable
 import torch.nn.functional as F
-from data_ import get_domain_data
+
 
 
 ################################################################################################
@@ -58,36 +58,37 @@ def data_task(config, X_train, Y_train, X_test, Y_test, scaler):
     test_loader, _ = get_dataloader(X_test_t, Y_test_t, batchsize=config.batchsize, n_class=config.n_class, scaler = scaler, train=False)
     return X_train_t, Y_train_t, train_loader, X_test_t, Y_test_t, test_loader, scaler
 
-def data_task_domain(config, scaler, domain_name):
+def data_task_domain(config, X_train_all, Y_train_all, X_test_all, Y_test_all, scaler):
     """
-    Loads Train/Test data for a specific Month (domain_name).
+    Domain-IL:
+    Uses preloaded per-domain data from data_.dataset(config)
     """
-    
-    # Load Train
-    X_train, Y_train = get_domain_data(config.data_root, domain_name, is_train=True)
-    
-    # Load Test (for immediate evaluation of this task)
-    X_test, Y_test = get_domain_data(config.data_root, domain_name, is_train=False)
 
-    # Create Loaders
-    # Note: n_class is fixed (config.init_classes)
+    domain_id = config.task
+
+    X_train = X_train_all[domain_id]
+    Y_train = Y_train_all[domain_id]
+    X_test  = X_test_all[domain_id]
+    Y_test  = Y_test_all[domain_id]
+
     train_loader, scaler = get_dataloader(
-        X_train, Y_train, 
-        batchsize=config.batchsize, 
-        n_class=config.init_classes, 
-        scaler=scaler, 
+        X_train, Y_train,
+        batchsize=config.batchsize,
+        n_class=config.init_classes,
+        scaler=scaler,
         train=True
     )
-    
+
     test_loader, _ = get_dataloader(
-        X_test, Y_test, 
-        batchsize=config.batchsize, 
-        n_class=config.init_classes, 
-        scaler=scaler, 
+        X_test, Y_test,
+        batchsize=config.batchsize,
+        n_class=config.init_classes,
+        scaler=scaler,
         train=False
     )
 
-    return X_train, train_loader, X_test, test_loader, scaler
+    return X_train, Y_train, train_loader, X_test, Y_test, test_loader, scaler
+
 
 
 def report_result(config, ls_a):

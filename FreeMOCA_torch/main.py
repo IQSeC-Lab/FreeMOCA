@@ -22,7 +22,7 @@ from train import (
 from models import Classifier, interpolate_models
 from metrics_cl import compute_cl_metrics
 
-
+from data_ import dataset
 # ============================================================
 # Setup
 # ============================================================
@@ -42,13 +42,16 @@ assert config.scenario in ["class", "domain"], \
 # ============================================================
 
 X_train, Y_train, X_test, Y_test = dataset(config)
-Y_train, Y_test = class_pick_rand(config, Y_train, Y_test)
+
+if config.scenario == "class":
+    Y_train, Y_test = class_pick_rand(config, Y_train, Y_test)
+
 
 # ============================================================
 # Model & optimizer
 # ============================================================
 
-C = Classifier().to(device)
+C = Classifier(config).to(device)
 optimizer = optim.SGD(
     C.parameters(),
     lr=config.lr,
@@ -72,9 +75,9 @@ def n_class_for_task(task_id):
 # CL metric storage (class-IL only)
 # ============================================================
 
-if config.scenario == "class":
-    T = config.nb_task
-    R = np.full((T, T), np.nan, dtype=float)
+
+T = config.nb_task
+R = np.full((T, T), np.nan, dtype=float)
 
 ls_a = []
 past_Classifier = None
@@ -143,55 +146,62 @@ for task in range(config.nb_task):
         acc = test(config, C, test_loader)
         ls_a.append(acc)
 
-    # ----------------------------
-    # CL metrics (class-IL only)
-    # ----------------------------
-    
+
+# ----------------------------
+# Continual evaluation (ALL scenarios)
+# ----------------------------
     C.eval()
-    for j in range(T):
-        if j <= task:
-            model_eval = C
-            n_eval = n_class_for_task(task)
-        else:
-            model_eval = deepcopy(C)
-            model_eval = model_eval.expand_output_layer(
+
+    for j in range(task + 1):
+
+        if config.scenario == "class":
+            # ----- Class-IL evaluation -----
+            if j <= task:
+                model_eval = C
+                n_eval = n_class_for_task(task)
+            else:
+                model_eval = deepcopy(C)
+                model_eval = model_eval.expand_output_layer(
+                    config.init_classes, config.n_inc, j
+                ).to(device).eval()
+                n_eval = n_class_for_task(j)
+
+            Xte_j, Yte_j = get_iter_test_dataset_task(
+                X_test, Y_test,
                 config.init_classes, config.n_inc, j
-            ).to(device).eval()
-            n_eval = n_class_for_task(j)
+            )
 
-        Xte_j, Yte_j = get_iter_test_dataset_task(
-            X_test, Y_test,
-            config.init_classes, config.n_inc, j
-        )
+            test_loader_j, _ = get_dataloader(
+                Xte_j, Yte_j,
+                batchsize=config.batchsize,
+                n_class=n_eval,
+                scaler=scaler,
+                train=False
+            )
 
-        test_loader_j, _ = get_dataloader(
-            Xte_j, Yte_j,
-            batchsize=config.batchsize,
-            n_class=n_eval,
-            scaler=scaler,
-            train=False
-        )
+        else:
+            # ----- Domain-IL evaluation -----
+            Xte_j = X_test[j]
+            Yte_j = Y_test[j]
+
+            test_loader_j, _ = get_dataloader(
+                Xte_j, Yte_j,
+                batchsize=config.batchsize,
+                n_class=config.init_classes,  # fixed label space
+                scaler=scaler,
+                train=False
+            )
+
+            model_eval = C
 
         with torch.no_grad():
             acc_j = test(config, model_eval, test_loader_j)
 
         R[task, j] = acc_j / 100.0
 
-    m = compute_cl_metrics(R[:task+1, :task+1])
-    print(
-        f"[CL @task {task}] "
-        f"ACC={m['ACC']*100:.2f}  "
-        f"BWT={m['BWT']*100:.2f}  "
-        f"FWT={m['FWT']*100:.2f}"
-    )
-
-    print(f"Task {task} done.\n")
-
 # ============================================================
 # Final
 # ============================================================
-
-
 
 final_m = compute_cl_metrics(R)
 print("\n==== Final CL Metrics ====")

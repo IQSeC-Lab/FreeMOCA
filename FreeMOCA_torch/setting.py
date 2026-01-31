@@ -52,6 +52,11 @@ def configurate(args, config):
     else:
         raise ValueError(f"Unknown scenario: {args.scenario}")
 
+    if args.dataset == "EMBER":
+        config.feats_length = 2381
+    elif args.dataset == "AZ":
+        config.feats_length = 2439 if args.scenario == "class" else 1789
+
     config.nb_task = nb_task
 
     # --------------------------------------------------

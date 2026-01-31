@@ -64,7 +64,7 @@ class Classifier(nn.Module):
         # --------------------------------------------------
         self.flatten = nn.Flatten()
         self.fc = nn.Linear(128, self.output_dim)
-
+        # self.softmax = nn.Softmax(dim=-1)
     # ------------------------------------------------------
     # Forward
     # ------------------------------------------------------
@@ -85,7 +85,8 @@ class Classifier(nn.Module):
 
         if len(original_shape) == 3:
             logits = logits.view(original_shape[0], original_shape[1], -1)
-
+        
+        # x = self.softmax(x)
         return logits
 
     # ------------------------------------------------------
