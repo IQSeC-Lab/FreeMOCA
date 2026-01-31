@@ -1,111 +1,215 @@
 import torch
 import torch.nn as nn
-from torch.autograd import Variable
-from copy import deepcopy
 import torch.optim as optim
 import numpy as np
-import pandas
+from copy import deepcopy
 from sklearn.preprocessing import StandardScaler
-import joblib
-from function import test, get_dataloader, class_pick_rand
 
-from torch.utils.data import TensorDataset
 from dynaconf import Dynaconf
 from arguments import _parse_args
 from setting import configurate, torch_setting
-from _data import dataset
-from train import data_task,data_task_joint, report_result
-from train import run_batch_BCE as run_batch
-import subprocess
-import random
+
+from function import (
+    test, get_dataloader, class_pick_rand,
+    get_iter_test_dataset_task
+)
+from train import (
+    data_task,
+    data_task_domain,
+    report_result,
+    run_batch_BCE as run_batch
+)
 from models import Classifier, interpolate_models
+from metrics_cl import compute_cl_metrics
 
-
+from data_ import dataset
+# ============================================================
+# Setup
+# ============================================================
 
 config = Dynaconf()
 args = _parse_args()
 configurate(args, config)
 torch_setting(config)
 
-##############
-# EMBER DATA #
-##############
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+assert config.scenario in ["class", "domain"], \
+    "config.scenario must be 'class' or 'domain'"
+
+# ============================================================
+# Dataset
+# ============================================================
 
 X_train, Y_train, X_test, Y_test = dataset(config)
 
-# ############################################
-# # data random arrange #
-# #############################################
-
-Y_train, Y_test = class_pick_rand(config, Y_train, Y_test)
-
-###############################
-# Models and Hyper Parameters #
-###############################
+if config.scenario == "class":
+    Y_train, Y_test = class_pick_rand(config, Y_train, Y_test)
 
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# ============================================================
+# Model & optimizer
+# ============================================================
 
-
+C = Classifier(config).to(device)
+optimizer = optim.SGD(
+    C.parameters(),
+    lr=config.lr,
+    momentum=config.momentum,
+    weight_decay=config.weight_decay
+)
 criterion = nn.CrossEntropyLoss()
+scaler = StandardScaler()
+
+# ============================================================
+# Helpers
+# ============================================================
+
+def n_class_for_task(task_id):
+    if config.scenario == "domain":
+        return config.init_classes
+    return config.init_classes + task_id * config.n_inc
 
 
-###############################
-# continual learning training #
-###############################
+# ============================================================
+# CL metric storage (class-IL only)
+# ============================================================
+
+
+T = config.nb_task
+R = np.full((T, T), np.nan, dtype=float)
+
 ls_a = []
+past_Classifier = None
 
-scaler = StandardScaler()
-
-###############################
-C = Classifier()
-
-C.to(device)
-C_optimizer = optim.SGD(C.parameters(), lr=config.lr, momentum=config.momentum, weight_decay=config.weight_decay)
-criterion = nn.CrossEntropyLoss()
-
-scaler = StandardScaler()
+# ============================================================
+# Training loop
+# ============================================================
 
 for task in range(config.nb_task):
-    config.n_class = config.init_classes + task * config.n_inc
     config.task = task
+    config.n_class = n_class_for_task(task)
 
-    # Load data
-    X_train_t, Y_train_t, train_loader, X_test_t, Y_test_t, test_loader, scaler = data_task(config, X_train, Y_train, X_test, Y_test, scaler)
-    config.nb_batch = int(len(X_train_t) / config.batchsize)
-    C.to(device)
+    # ----------------------------
+    # Data
+    # ----------------------------
+    if config.scenario == "class":
+        Xtr, Ytr, train_loader, Xte, Yte, test_loader, scaler = \
+            data_task(config, X_train, Y_train, X_test, Y_test, scaler)
+    else:
+        Xtr, Ytr, train_loader, Xte, Yte, test_loader, scaler = \
+            data_task_domain(config, X_train, Y_train, X_test, Y_test, scaler)
 
-    if task > 0:
-        C = C.expand_output_layer(config.init_classes, config.n_inc, task)
-        C.to(device)
+    config.nb_batch = len(Xtr) // config.batchsize
 
+    # ----------------------------
+    # Expand head (class-IL only)
+    # ----------------------------
+    if config.scenario == "class" and task > 0:
+        C = C.expand_output_layer(
+            config.init_classes,
+            config.n_inc,
+            task
+        ).to(device)
+
+    # ----------------------------
+    # Train
+    # ----------------------------
     for epoch in range(config.epochs):
         C.train()
-        epoch_loss = 0
+        for inputs, labels in train_loader:
+            inputs = inputs.float().to(device)
+            labels = labels.float().to(device)
+            run_batch(config, optimizer, C, criterion, inputs, labels)
 
-        for n, (inputs, labels) in enumerate(train_loader):
-            inputs = inputs.float().to(config.device)
-            labels = labels.float().to(config.device)
-
-            # Run training batch
-            run_batch(config, C_optimizer, C, criterion, inputs, labels)
-
-    # Evaluate
+    # ----------------------------
+    # Interpolation
+    # ----------------------------
     current_Classifier = deepcopy(C)
-    
+
     if task > 0:
-        # print(f"\nInterpolating task {task-1} and task {task}")
-        C = interpolate_models(past_Classifier, current_Classifier, alpha=0.5, method="linear")
-        C.to(device)
+        C = interpolate_models(
+            past_Classifier,
+            current_Classifier,
+            Lambda=None,
+            method="linear",
+            lambda_min=config.lambda_min,
+            lambda_max=config.lambda_max
+        ).to(device)
 
     past_Classifier = deepcopy(C)
 
-    print("\nTesting new model")
+    # ----------------------------
+    # Evaluation (standard)
+    # ----------------------------
     with torch.no_grad():
-        accuracy = test(config, C, test_loader)
+        acc = test(config, C, test_loader)
+        ls_a.append(acc)
 
-        ls_a.append(accuracy)
 
-    print("Task", task, "done.\n")
+# ----------------------------
+# Continual evaluation (ALL scenarios)
+# ----------------------------
+    C.eval()
+
+    for j in range(task + 1):
+
+        if config.scenario == "class":
+            # ----- Class-IL evaluation -----
+            if j <= task:
+                model_eval = C
+                n_eval = n_class_for_task(task)
+            else:
+                model_eval = deepcopy(C)
+                model_eval = model_eval.expand_output_layer(
+                    config.init_classes, config.n_inc, j
+                ).to(device).eval()
+                n_eval = n_class_for_task(j)
+
+            Xte_j, Yte_j = get_iter_test_dataset_task(
+                X_test, Y_test,
+                config.init_classes, config.n_inc, j
+            )
+
+            test_loader_j, _ = get_dataloader(
+                Xte_j, Yte_j,
+                batchsize=config.batchsize,
+                n_class=n_eval,
+                scaler=scaler,
+                train=False
+            )
+
+        else:
+            # ----- Domain-IL evaluation -----
+            Xte_j = X_test[j]
+            Yte_j = Y_test[j]
+
+            test_loader_j, _ = get_dataloader(
+                Xte_j, Yte_j,
+                batchsize=config.batchsize,
+                n_class=config.init_classes,  # fixed label space
+                scaler=scaler,
+                train=False
+            )
+
+            model_eval = C
+
+        with torch.no_grad():
+            acc_j = test(config, model_eval, test_loader_j)
+
+        R[task, j] = acc_j / 100.0
+
+# ============================================================
+# Final
+# ============================================================
+
+final_m = compute_cl_metrics(R)
+print("\n==== Final CL Metrics ====")
+print(
+    f"ACC={final_m['ACC']*100:.2f}  "
+    f"BWT={final_m['BWT']*100:.2f}  "
+    f"FWT={final_m['FWT']*100:.2f}"
+)
+np.save("R_matrix.npy", R)
 
 report_result(config, ls_a)

@@ -1,0 +1,10 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# Numpy / experiment outputs
+*.npy
+
+# Virtual environments
+.venv/
+.env

@@ -1,57 +1,149 @@
 import argparse
 
 def _parse_args():
-    parser = argparse.ArgumentParser(description='MalCL')
-    parser.add_argument('-e', '--epochs', default=50, type=int)
+    parser = argparse.ArgumentParser(
+        description="FreeMOCA Continual Learning (Class-IL & Domain-IL)"
+    )
 
+    # =====================================================
+    # 1. EXPERIMENT MODE
+    # =====================================================
     parser.add_argument(
-        '--init_classes', type=int, default=50, help='number of classes for initial task.'
+        '--scenario',
+        type=str,
+        choices=['class', 'domain'],
+        required=True,
+        help="Continual learning scenario"
     )
 
     parser.add_argument(
-        '--final_classes', type=int, default=100, help='number of total classes for training.'
+        '--dataset',
+        type=str,
+        choices=['EMBER', 'AZ'],
+        required=True,
+        help="Dataset name"
+    )
+
+    parser.add_argument('--seed_', type=int, default=20)
+    parser.add_argument('--use_cuda', type=bool, default=True)
+
+    # =====================================================
+    # 2. TRAINING HYPERPARAMETERS
+    # =====================================================
+    parser.add_argument('-e', '--epochs', type=int, default=50)
+    parser.add_argument('--batchsize', type=int, default=256)
+    parser.add_argument('--lr', type=float, default=0.001)
+    parser.add_argument('--momentum', type=float, default=0.9)
+    parser.add_argument('--weight_decay', type=float, default=1e-6)
+
+    # =====================================================
+    # 3. CONTINUAL LEARNING STRUCTURE
+    # =====================================================
+    parser.add_argument(
+        '--nb_task',
+        type=int,
+        required=True,
+        help="Number of sequential tasks"
     )
 
     parser.add_argument(
-        '--n_inc', type=int, default=5, help='number of incremental classes for each task.'
+        '--init_classes',
+        type=int,
+        required=True,
+        help="Number of classes at task 0"
+    )
+
+    # ---- Class-IL only ----
+    parser.add_argument(
+        '--n_inc',
+        type=int,
+        default=0,
+        help="Number of new classes per task (Class-IL only)"
     )
 
     parser.add_argument(
-        '--lr', type=float, default=0.001, help='Learning rate'
+        '--final_classes',
+        type=int,
+        default=None,
+        help="Total number of classes (Class-IL only)"
+    )
+
+    # =====================================================
+    # 4. DATA PATHS
+    # =====================================================
+    # Used by:
+    # - Class-IL (EMBER, AZ)
+    # - EMBER-Domain (train/test split inside each domain)
+    parser.add_argument(
+        '--train_data',
+        type=str,
+        default=None,
+        help="Path to training data (Class-IL or EMBER-Domain)"
     )
 
     parser.add_argument(
-        '--weight_decay', type=float, default=0.000001, help='Weight decay for the Classifier (SGD).'
+        '--test_data',
+        type=str,
+        default=None,
+        help="Path to test data (Class-IL or EMBER-Domain)"
+    )
+
+    # =====================================================
+    # 5. DOMAIN-IL SPECIFIC
+    # =====================================================
+    parser.add_argument(
+        '--data_root',
+        type=str,
+        default=None,
+        help="Root directory containing domain subfolders (Domain-IL only)"
     )
 
     parser.add_argument(
-        '--momentum', type=float, default=0.9, help='momentum for the Classifier (SGD).'
+        '--domains',
+        nargs='+',
+        default=None,
+        help="Ordered list of domains (Domain-IL only)"
     )
 
-    parser.add_argument(
-        '--batchsize', type=int, default=256
-    )
+    # =====================================================
+    # 6. FREEMOCA INTERPOLATION
+    # =====================================================
+    parser.add_argument('--lambda_min', type=float, default=0.3)
+    parser.add_argument('--lambda_max', type=float, default=0.7)
 
-    parser.add_argument(
-        '--sample_select', type=str, default='L1_C_Mean', choices=['L2_One_Hot', 'L1_B_Mean', 'L1_C_Mean']
-        , help='choose among the 3 of sample selection schemes. (L2_One_Hot, L1_B_Mean, L1_C_Mean)'
-    )
+    args = parser.parse_args()
 
-    parser.add_argument(
-        '--k', type=int, default=3, help='k is a variable related to the selected number of synthetic samples on a class in each batch'
-    )
+    # =====================================================
+    # 7. DATASET-SPECIFIC DEFAULTS (IMPORTANT)
+    # =====================================================
+    if args.scenario == 'domain' and args.domains is None:
+        if args.dataset == 'EMBER':
+            args.domains = [
+                '2018-01', '2018-02', '2018-03', '2018-04',
+                '2018-05', '2018-06', '2018-07', '2018-08',
+                '2018-09', '2018-10', '2018-11', '2018-12'
+            ]
+        elif args.dataset == 'AZ':
+            args.domains = [
+                '2008', '2010', '2011', '2012',
+                '2013', '2014', '2015', '2016'
+            ]
 
-    parser.add_argument(
-        '--Generator_loss', type=str, default='FML', choices=['FML', 'BCE']
-        , help='choose among the 2 Loss functions for Generator training. (FML, BCE)'
-    )
+    # =====================================================
+    # 8. SAFETY CHECKS (FAIL FAST)
+    # =====================================================
+    # =====================================================
+# 8. SAFETY CHECKS (FAIL FAST)
+# =====================================================
+    if args.scenario == 'class':
+        assert args.n_inc > 0, "Class-IL requires --n_inc > 0"
+        assert args.final_classes is not None, "Class-IL requires --final_classes"
+        assert args.train_data is not None, "Class-IL requires --train_data"
+        assert args.test_data is not None, "Class-IL requires --test_data"
 
-    parser.add_argument('--train_data', default = '/home/zasadinaderab/datasets/Datasets/Extracted_Data/EMBER-Class-Task/top_classes_100', help='Path of train data')
+    if args.scenario == 'domain':
+        assert args.data_root is not None, "Domain-IL requires --data_root"
+        assert args.n_inc == 0, "Domain-IL must have n_inc = 0"
+    
 
-    parser.add_argument('--test_data', default = '/home/zasadinaderab/datasets/Datasets/Extracted_Data/EMBER-Class-Task/top_classes_100', help='Path of test data')
-
-    parser.add_argument('--use_cuda', default=True, type=bool)
-
-    parser.add_argument('--seed_', default=20, type=int, help='random seed for class order')
-
-    return parser.parse_args()
+    return args
