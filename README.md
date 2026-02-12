@@ -74,7 +74,7 @@ Dataset sources:
 
 ---
 
-## Models
+## Model
 
 We evaluate FreeMOCA using two classifiers.
 
@@ -89,32 +89,111 @@ We evaluate FreeMOCA using two classifiers.
     - Batch normalization, ReLU, dropout
 - Fully connected classification head with softmax output
 
-![Classifier Architecture](FreeMOCA-Overview.png)
+---
+
+
+
+## Running FreeMOCA (Class-IL & Domain-IL)
+
+This repository supports two continual learning scenarios:
+
+- **Class-Incremental Learning (Class-IL)** → new classes are introduced over tasks.
+- **Domain-Incremental Learning (Domain-IL)** → label space is fixed, but data distribution shifts across domains (e.g., months/years).
+
+FreeMOCA interpolation is applied after each task using adaptive layer-wise interpolation.
 
 ---
 
-### Convolutional Kolmogorov–Arnold Network (C-KAN)
+###  Common Arguments
 
-- Uses KAN-based convolutions for enhanced representational power
-- More sensitive to catastrophic forgetting than CNN
-- FreeMOCA substantially mitigates forgetting in C-KAN models
+| Argument | Description |
+|-----------|-------------|
+| `--scenario {class,domain}` | Continual learning scenario (**required**) |
+| `--dataset {EMBER,AZ}` | Dataset name (**required**) |
+| `--nb_task` | Number of sequential tasks (**required**) |
+| `--init_classes` | Number of classes at task 0 (**required**) |
+| `--epochs` | Epochs per task |
+| `--batchsize` | Batch size |
+| `--lr` | Learning rate |
+| `--momentum` | SGD momentum |
+| `--weight_decay` | Weight decay |
+| `--lambda_min` | Minimum interpolation weight |
+| `--lambda_max` | Maximum interpolation weight |
+
+---
+
+### 1. Class-Incremental Learning (Class-IL)
+
+In Class-IL:
+- The classifier head expands at each task.
+- Classes are shuffled once at the beginning.
+- Continual learning metrics (ACC, BWT, FWT) are computed.
+
+
+#### EMBER
+
+TRAIN_DATA/
+├── XY_train.npz
+└── XY_test.npz
+
+
+### AZ
+
+TRAIN_DATA/
+├── AZ_Class_Train.npz
+└── AZ_Class_Test.npz
+---
 
 ---
 
-## Experimental Setup
+## ⚙️ Required Class-IL Arguments
 
-- **Learning scenario**: Class-Incremental Learning
-- **Task sequence**:
-  - Task 1: 50 classes
-  - Tasks 2–11: +5 new classes per task
-- **Optimizer**: SGD  
-  - Learning rate: 1e-3  
-  - Momentum: 0.9  
-  - Weight decay: 1e-7
-- **Batch size**: 256
-- No replay, data augmentation, or rehearsal is used
+- `--n_inc` (must be > 0)
+- `--final_classes`
+- `--train_data`
+- `--test_data`
 
 ---
+
+
+
+```bash
+python main.py \
+  --scenario class \
+  --dataset EMBER \
+  --nb_task 11 \
+  --init_classes 50 \
+  --n_inc 5 \
+  --final_classes 100 \
+  --train_data /path/to/EMBER_Class \
+  --test_data /path/to/EMBER_Class \
+  --epochs 50 \
+  --batchsize 256 \
+  --lr 0.001 \
+  --momentum 0.9 \
+  --weight_decay 1e-6 \
+  --lambda_min 0.3 \
+  --lambda_max 0.7
+
+
+python main.py \
+  --scenario class \
+  --dataset AZ \
+  --nb_task 11 \
+  --init_classes 50 \
+  --n_inc 5 \
+  --final_classes 100 \
+  --train_data /path/to/AZ_Class \
+  --test_data /path/to/AZ_Class \
+  --epochs 50 \
+  --batchsize 256 \
+  --lr 0.001 \
+  --momentum 0.9 \
+  --weight_decay 1e-6 \
+  --lambda_min 0.3 \
+  --lambda_max 0.7
+
+
 
 ## Baselines
 
