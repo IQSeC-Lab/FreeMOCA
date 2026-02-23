@@ -132,30 +132,20 @@ In Class-IL:
 
 #### EMBER
 
+```text
 TRAIN_DATA/
 ├── XY_train.npz
 └── XY_test.npz
 
-
-### AZ
-
+```
+#### AZ
+```text
 TRAIN_DATA/
 ├── AZ_Class_Train.npz
 └── AZ_Class_Test.npz
----
 
----
-
-## ⚙️ Required Class-IL Arguments
-
-- `--n_inc` (must be > 0)
-- `--final_classes`
-- `--train_data`
-- `--test_data`
-
----
-
-
+```
+### Run: EMBER Class-IL
 
 ```bash
 python main.py \
@@ -175,7 +165,11 @@ python main.py \
   --lambda_min 0.3 \
   --lambda_max 0.7
 
+```
 
+### Run: AZ Class-IL
+
+```bash
 python main.py \
   --scenario class \
   --dataset AZ \
@@ -193,7 +187,7 @@ python main.py \
   --lambda_min 0.3 \
   --lambda_max 0.7
 
-
+```
 
 ## Baselines
 
@@ -222,8 +216,7 @@ FreeMOCA outperforms these methods **without storing any past data**.
   - Up to **46% reduction in catastrophic forgetting**
 - **AZ-Class**:
   - ~5% improvement over state-of-the-art methods
-- **C-KAN**:
-  - Accuracy improves from ~13–18% to over **55–64%**
+
 
 ---
 
@@ -233,3 +226,5 @@ FreeMOCA outperforms these methods **without storing any past data**.
 conda create -n freemoca python=3.9
 conda activate freemoca
 pip install -r requirements.txt
+
+```
