@@ -202,8 +202,7 @@ python main.py \
 - BI-R
 - TAMiL
 - MaLCL
-- CLEWI
-- PEARL
+
 
 FreeMOCA outperforms these methods **without storing any past data**.
 
