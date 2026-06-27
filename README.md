@@ -13,7 +13,7 @@
 
 ## FreeMOCA Pipeline
 
-
+<img width="5200" height="1400" alt="FreeMOCA_Overview_v3" src="https://github.com/user-attachments/assets/93d44b2d-7f16-4002-8c9c-68ca8274ecac" />
 
 FreeMOCA operates in the following process:
 
@@ -116,6 +116,14 @@ Our repository supports experiments on the following standard baselines:
 
 - **None**: Train only on the current task (lower bound)
 - **Joint**: Train on all data seen so far (upper bound, impractical)
+
+You can run it with the following command:
+
+```python
+cd /path/to/experiment/directory
+CUDA_VISIBLE_DEVICES=0 python none.py --arugment_you_want
+CUDA_VISIBLE_DEVICES=0 python joint.py --arugment_you_want
+```
 
 and following previous works:
 
