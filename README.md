@@ -150,13 +150,21 @@ and following previous works:
 You can run baselines with the following command:
 
 ```python
-# CLeWI for EMBER-Class and AZ-Class
+# CLeWI for EMBER-Class
 cd ./baselines/CLeWI
 CUDA_VISIBLE_DEVICES=6 python main.py --model="clewi" \
   --dataset="seq_ember" --n_tasks=11 \
   --lr=0.001 --buffer_size=500 --n_epochs=50 \
   --seed=42 --optim_wd=0.0 --optim_mom=0.0 \
-  --batch_size=512 --sub_dataset="ember" # ember or az for --sub_dataset
+  --batch_size=512 --sub_dataset="ember"
+
+# CLeWI for AZ-Class
+cd ./baselines/CLeWI
+CUDA_VISIBLE_DEVICES=6 python main.py --model="clewi" \
+  --dataset="seq_ember" --n_tasks=11 \
+  --lr=0.001 --buffer_size=500 --n_epochs=50 \
+  --seed=42 --optim_wd=0.0 --optim_mom=0.0 \
+  --batch_size=512 --sub_dataset="az"
 ```
 
 ```python
@@ -175,48 +183,60 @@ python main.py --config=./exps/wsc_memory/$MODEL_NAME.json
 
 ```python
 # GR for EMBER-Class
-cd ./baselines/GR_EWC_LwF_EMBER
+cd ./baselines/GR_EWC_LwF_iCaRL_EMBER
 CUDA_VISIBLE_DEVICES=0 python main.py --data_set=EMBER --tasks=11 --replay=generative --metrics --logger_file gr --scenario=class
 
 # GR for AZ-Class
-cd ./baselines/GR_EWC_LwF_AZ
+cd ./baselines/GR_EWC_LwF_iCaRL_AZ
 CUDA_VISIBLE_DEVICES=0 python main.py --data_set=ANDROZOO --tasks=11 --replay=generative --metrics --logger_file gr --scenario=class
 ```
 
 ```python
 # EWC for EMBER-Class
-cd ./baselines/GR_EWC_LwF_EMBER
+cd ./baselines/GR_EWC_LwF_iCaRL_EMBER
 CUDA_VISIBLE_DEVICES=0 python main.py --data_set=EMBER --tasks=11 --ewc --lambda=50 --metrics --logger_file ewc --scenario=class
 
 # EWC for AZ-Class
-cd ./baselines/GR_EWC_LwF_AZ
+cd ./baselines/GR_EWC_LwF_iCaRL_AZ
 CUDA_VISIBLE_DEVICES=0 python main.py --data_set=ANDROZOO --tasks=11 --ewc --lambda=50 --metrics --logger_file ewc --scenario=class
 ```
 
 ```python
 # LwF for EMBER-Class
-cd ./baselines/GR_EWC_LwF_EMBER
+cd ./baselines/GR_EWC_LwF_iCaRL_EMBER
 CUDA_VISIBLE_DEVICES=0 python main.py --data_set=EMBER  --tasks=11 --replay=current --distill --metrics --logger_file lwf --scenario=class
 
 # LwF for AZ-Class
-cd ./baselines/GR_EWC_LwF_AZ
+cd ./baselines/GR_EWC_LwF_iCaRL_AZ
 CUDA_VISIBLE_DEVICES=0 python main.py --data_set=AZ  --tasks=11 --replay=current --distill --metrics --logger_file lwf --scenario=class
 ```
 
 ```python
-# iCaRL
-cd ./baselines/iCaRL
+# iCaRL for EMBER-Class
+cd ./baselines/GR_EWC_LwF_iCaRL_EMBER
+CUDA_VISIBLE_DEVICES=1 python main.py --data_set=EMBER --tasks=11 --icarl --budget=2000 --metrics --logger_file=icarl --scenario=class
 
+# iCaRL for AZ-Class
+cd ./baselines/GR_EWC_LwF_iCaRL_AZ
+CUDA_VISIBLE_DEVICES=0 python main.py --data_set=ANDROZOO --tasks=11 --icarl --budget=2000 --metrics --logger_file=icarl --scenario=class
 ```
 
 ```python
-# TAMiL
-cd ./baselines/TAMiL
+# TAMiL for EMBER-Class
+cd ./baselines/TAMiL_EMBER
+CUDA_VISIBLE_DEVICES=0 python main.py
 
+# TAMiL for AZ-Class
+cd ./baselines/TAMiL_AZ
+CUDA_VISIBLE_DEVICES=0 python main.py
 ```
 
 ```python
-# MalCL
-cd ./baselines/MalCL
+# MalCL for EMBER-Class
+cd ./baselines/MalCL_EMBER
+CUDA_VISIBLE_DEVICES=0 python main.py --train_data /path/to/data --test_data /path/to/data
 
+# MalCL for AZ-Class
+cd ./baselines/AZ_EMBER
+CUDA_VISIBLE_DEVICES=0 python main.py --train_data /path/to/data --test_data /path/to/data
 ```
