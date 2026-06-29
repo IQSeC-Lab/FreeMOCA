@@ -140,7 +140,7 @@ and following previous works:
 
 - **CLeWI**: Modified from [this GitHub repository](https://github.com/jedrzejkozal/weight-interpolation-cl), work from "[Continual Learning with Weight Interpolation](https://arxiv.org/abs/2404.04002)."
 - **WSC**: Modified from [this GitHub repository](https://github.com/umamicode/weight-space-consolidation), work from "[Forget Forgetting: Continual Learning in a World of Abundant Memory](https://arxiv.org/abs/2502.07274)."
-- **Generative Replay (GR)**: Modified from [this GitHub repository](https://github.com/msrocean/continual-learning-malware), work from "[]()."
+- **Generative Replay (GR)**: Modified from [this GitHub repository](https://github.com/msrocean/continual-learning-malware), work from "[Continual learning with deep generative replay](https://arxiv.org/abs/1705.08690)."
 - **EWC**: Modified from [this GitHub repository](https://github.com/msrocean/continual-learning-malware), work from "[Overcoming catastrophic forgetting in neural networks](https://arxiv.org/abs/1612.00796)."
 - **LwF**: Modified from [this GitHub repository](https://github.com/msrocean/continual-learning-malware), work from "[Learning without Forgetting](https://arxiv.org/pdf/1606.09282)."
 - **iCaRL**: Modified from [this GitHub repository](https://github.com/msrocean/continual-learning-malware), work from "[iCaRL: Incremental Classifier and Representation Learning](https://arxiv.org/abs/1611.07725)."
