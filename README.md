@@ -140,24 +140,83 @@ and following previous works:
 
 - **CLeWI**: Modified from [this GitHub repository](https://github.com/jedrzejkozal/weight-interpolation-cl), work from "[Continual Learning with Weight Interpolation](https://arxiv.org/abs/2404.04002)."
 - **WSC**: Modified from [this GitHub repository](https://github.com/umamicode/weight-space-consolidation), work from "[Forget Forgetting: Continual Learning in a World of Abundant Memory](https://arxiv.org/abs/2502.07274)."
+- **Generative Replay (GR)**: Modified from [this GitHub repository](https://github.com/msrocean/continual-learning-malware), work from "[]()."
+- **EWC**: Modified from [this GitHub repository](https://github.com/msrocean/continual-learning-malware), work from "[Overcoming catastrophic forgetting in neural networks](https://arxiv.org/abs/1612.00796)."
+- **LwF**: Modified from [this GitHub repository](https://github.com/msrocean/continual-learning-malware), work from "[Learning without Forgetting](https://arxiv.org/pdf/1606.09282)."
+- **iCaRL**: Modified from [this GitHub repository](https://github.com/msrocean/continual-learning-malware), work from "[iCaRL: Incremental Classifier and Representation Learning](https://arxiv.org/abs/1611.07725)."
+- **TAMiL**: Modified from [this GitHub repository](https://github.com/NeurAI-Lab/TAMiL), work from "[Task-Aware Information Routing from Common Representation Space in Lifelong Learning](https://arxiv.org/abs/2302.11346)."
+- **MalCL**: Modified from [this GitHub repository](https://github.com/MalwareReplayGAN/MalCL), work from "[MalCL: Leveraging GAN-Based Generative Replay to Combat Catastrophic Forgetting in Malware Classification](https://arxiv.org/abs/2501.01110)."
 
 You can run baselines with the following command:
 
 ```python
 # CLeWI for EMBER-Class and AZ-Class
-cd ./baselines/CLeWI-Class
+cd ./baselines/CLeWI
 CUDA_VISIBLE_DEVICES=6 python main.py --model="clewi" \
   --dataset="seq_ember" --n_tasks=11 \
   --lr=0.001 --buffer_size=500 --n_epochs=50 \
   --seed=42 --optim_wd=0.0 --optim_mom=0.0 \
   --batch_size=512 --sub_dataset="ember" # ember or az for --sub_dataset
+```
 
+```python
 # WSC for EMBER-Class
-cd ./baselines/WSC-Class
+cd ./baselines/WSC
 MODEL_NAME=wsc_20_ember
 python main.py --config=./exps/wsc_memory/$MODEL_NAME.json
+```
 
+```python
 # WSC for AZ-Class
+cd ./baselines/WSC
 MODEL_NAME=wsc_20_az
 python main.py --config=./exps/wsc_memory/$MODEL_NAME.json
+```
+
+```python
+# GR for EMBER-Class
+cd ./baselines/GR_EWC_LwF_EMBER
+CUDA_VISIBLE_DEVICES=0 python main.py --data_set=EMBER --tasks=11 --replay=generative --metrics --logger_file gr --scenario=class
+
+# GR for AZ-Class
+cd ./baselines/GR_EWC_LwF_AZ
+CUDA_VISIBLE_DEVICES=0 python main.py --data_set=ANDROZOO --tasks=11 --replay=generative --metrics --logger_file gr --scenario=class
+```
+
+```python
+# EWC for EMBER-Class
+cd ./baselines/GR_EWC_LwF_EMBER
+CUDA_VISIBLE_DEVICES=0 python main.py --data_set=EMBER --tasks=11 --ewc --lambda=50 --metrics --logger_file ewc --scenario=class
+
+# EWC for AZ-Class
+cd ./baselines/GR_EWC_LwF_AZ
+CUDA_VISIBLE_DEVICES=0 python main.py --data_set=ANDROZOO --tasks=11 --ewc --lambda=50 --metrics --logger_file ewc --scenario=class
+```
+
+```python
+# LwF for EMBER-Class
+cd ./baselines/GR_EWC_LwF_EMBER
+CUDA_VISIBLE_DEVICES=0 python main.py --data_set=EMBER  --tasks=11 --replay=current --distill --metrics --logger_file lwf --scenario=class
+
+# LwF for AZ-Class
+cd ./baselines/GR_EWC_LwF_AZ
+CUDA_VISIBLE_DEVICES=0 python main.py --data_set=AZ  --tasks=11 --replay=current --distill --metrics --logger_file lwf --scenario=class
+```
+
+```python
+# iCaRL
+cd ./baselines/iCaRL
+
+```
+
+```python
+# TAMiL
+cd ./baselines/TAMiL
+
+```
+
+```python
+# MalCL
+cd ./baselines/MalCL
+
 ```
