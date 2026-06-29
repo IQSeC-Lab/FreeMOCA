@@ -34,15 +34,26 @@ FreeMOCA was evaluated with two large-scale malware datasets, EMBER and Androzoo
 Download and set up the dataset in the following directory:
 
 ```python
-# EMBER
-FreeMOCA/data/EMBER
-├── XY_train.npz
-└── XY_test.npz
-
-# Androzoo (AZ)
-FreeMOCA/data/AZ
-├── AZ_Class_Train.npz
-└── AZ_Class_Test.npz
+FreeMOCA/data/
+├── AZ_Class
+│   ├── AZ_Class_Test.npz
+│   └── AZ_Class_Train.npz
+│
+├── AZ_Domain
+│   ├── 2008_Domain_AZ_Test_Transfo...
+│   ├── 2008_Domain_AZ_Train_Transfo...
+│   ├── 2009_Domain_AZ_Test_Transfo...
+│   └── ...
+│
+├── EMBER_Class
+│   ├── XY_test.npz
+│   └── XY_train.npz
+│
+└── EMBER_Domain
+    ├── 2018-01
+    ├── 2018-02
+    ├── 2018-03
+    └── ...
 ```
 
 ## Running FreeMOCA
@@ -68,25 +79,25 @@ pip install -r requirements.txt
 
 ```python
 # EMBER Class-IL
-cd ./FreeMOCA-Class/EMBER-Class
+cd ./FreeMOCA_Class/EMBER_Class
 CUDA_VISIBLE_DEVICES=0 python main.py --train_data /path/to/data --test_data /path/to/data
 ```
 
 ```python
 # AZ Class-IL
-cd ./FreeMOCA-Class/AZ-Class
+cd ./FreeMOCA_Class/AZ_Class
 CUDA_VISIBLE_DEVICES=0 python main.py --train_data /path/to/data --test_data /path/to/data
 ```
 
 ```python
 # EMBER Domain-IL
-cd ./FreeMOCA-Domain/EMBER-Domain
+cd ./FreeMOCA_Domain/EMBER_Domain
 CUDA_VISIBLE_DEVICES=0 python main.py --data_root /path/to/data/directory
 ```
 
 ```python
 # AZ Domain-IL
-cd ./FreeMOCA-Domain/AZ-Domain
+cd ./FreeMOCA_Domain/AZ_Domain
 CUDA_VISIBLE_DEVICES=0 python main.py --data_root /path/to/data/directory
 ```
 
@@ -127,9 +138,26 @@ CUDA_VISIBLE_DEVICES=0 python joint.py --arugment_you_want
 
 and following previous works:
 
-- **iCaRL**
-- **Experience Replay (ER)**
-- **Generative Replay (GR)**
-- **BI-R**
-- **TAMiL**
-- **MaLCL** 
+- **CLeWI**: Modified from [this GitHub repository](https://github.com/jedrzejkozal/weight-interpolation-cl), work from "[Continual Learning with Weight Interpolation](https://arxiv.org/abs/2404.04002)."
+- **WSC**: Modified from [this GitHub repository](https://github.com/umamicode/weight-space-consolidation), work from "[Forget Forgetting: Continual Learning in a World of Abundant Memory](https://arxiv.org/abs/2502.07274)."
+
+You can run baselines with the following command:
+
+```python
+# CLeWI for EMBER-Class and AZ-Class
+cd ./baselines/CLeWI-Class
+CUDA_VISIBLE_DEVICES=6 python main.py --model="clewi" \
+  --dataset="seq_ember" --n_tasks=11 \
+  --lr=0.001 --buffer_size=500 --n_epochs=50 \
+  --seed=42 --optim_wd=0.0 --optim_mom=0.0 \
+  --batch_size=512 --sub_dataset="ember" # ember or az for --sub_dataset
+
+# WSC for EMBER-Class
+cd ./baselines/WSC-Class
+MODEL_NAME=wsc_20_ember
+python main.py --config=./exps/wsc_memory/$MODEL_NAME.json
+
+# WSC for AZ-Class
+MODEL_NAME=wsc_20_az
+python main.py --config=./exps/wsc_memory/$MODEL_NAME.json
+```
