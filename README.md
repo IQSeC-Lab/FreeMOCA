@@ -1,10 +1,6 @@
-<h1 align='center' style="text-align:center; font-weight:bold; font-size:2.0em;letter-spacing:2.0px;"> FreeMOCA: Memory-Free Continual Learning for Malicious Code Analysis </h1>
+<h1 align='center' style="text-align:center; font-weight:bold; font-size:2.0em;letter-spacing:2.0px;"> Continual Learning Trajectory as Memory for Replay-Free Consolidation in Malicious Code Analysis</h1>
 
-<p align='center' style="text-align:center; font-size:2.0em;letter-spacing:2.0px;"> [<a href="https://arxiv.org/abs/2605.09664" target="_blank">ArXiv Paper Link</a>] </p>
 
-<p align='center' style="text-align:center; font-weight:bold; font-size:2.0em;letter-spacing:2.0px;"> <b> Zahra Asadi*, Haeseung Jeon*, Sohyun Han, Md Mahmuduzzaman Kamol, Se Eun Oh, Mohammad Saidur Rahman† </b> </p>
-
-<p align='center' style="text-align:center; font-size:2.0em;letter-spacing:2.0px;"> *Equally credited authors.  †Corresponding author. </p>
 
 
 > [!NOTE]
