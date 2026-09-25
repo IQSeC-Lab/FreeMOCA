@@ -4,7 +4,7 @@
 
 
 > [!NOTE]
-> This is official implementation of the paper *FreeMOCA: Memory-Free Continual Learning for Malicious Code Analysis*.
+> This is official implementation of the paper *Continual Learning Trajectory as Memory for Replay-Free Consolidation in Malicious Code Analysis*.
 
 
 ## FreeMOCA Pipeline
